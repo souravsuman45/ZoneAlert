@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import streamlit as st
 from typing import Optional
+import requests
 
 class DataManager:
     """
@@ -260,3 +261,40 @@ class DataManager:
         market_close_minutes = 16 * 60  # 4:00 PM
         
         return market_open_minutes <= current_time_minutes <= market_close_minutes
+    
+    def get_nifty_500_symbols(self) -> list:
+        """
+        Fetch the list of NIFTY 500 stock symbols from NSE website or local CSV fallback.
+        
+        Returns:
+            List of stock symbols (strings)
+        """
+        import os
+        from io import StringIO
+        # Try online fetch first
+        try:
+            url = "https://www1.nseindia.com/content/indices/ind_nifty500list.csv"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+            csv_data = response.text
+            # Check if the response is HTML (not CSV)
+            if "<html" in csv_data.lower():
+                raise Exception("NSE returned HTML instead of CSV.")
+            if not csv_data.startswith("Symbol"):
+                csv_data = "\n".join(csv_data.splitlines()[1:])
+            df = pd.read_csv(StringIO(csv_data), delimiter=",")
+            symbols = df["Symbol"].dropna().unique().tolist()
+            if symbols:
+                return symbols
+        except Exception as e:
+            st.warning(f"NSE online fetch failed: {e}. Using local CSV fallback.")
+        # Fallback: read from local CSV
+        try:
+            local_path = os.path.join(os.path.dirname(__file__), "nifty_500_list.csv")
+            df = pd.read_csv(local_path)
+            symbols = df[df.columns[0]].dropna().unique().tolist()
+            return symbols
+        except Exception as e:
+            st.error(f"Failed to load local NIFTY 500 CSV: {e}")
+            return []

@@ -46,19 +46,27 @@ def main():
         if exchange != st.session_state.get('selected_exchange', ''):
             st.session_state.selected_exchange = exchange
         
-        # Stock symbol input with auto-completion
-        nse_stocks = [
-            "RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR", "ICICIBANK", "KOTAKBANK", "LT", "SBIN", "BHARTIARTL",
-            "ITC", "ASIANPAINT", "AXISBANK", "MARUTI", "NESTLEIND", "BAJFINANCE", "HCLTECH", "WIPRO", "ULTRACEMCO", "ONGC",
-            "M&M", "TATASTEEL", "JSWSTEEL", "BPCL", "GRASIM", "HINDALCO", "POWERGRID", "NTPC", "COALINDIA", "DRREDDY",
-            "SUNPHARMA", "CIPLA", "DIVISLAB", "BIOCON", "LUPIN", "AUROPHARMA", "TORNTPHARM", "BRITANNIA", "MARICO",
-            "GODREJCP", "DABUR", "COLPAL", "TATACONSUM", "VEDL", "SAIL", "NMDC", "IOC", "GAIL", "DLF", "GODREJPROP",
-            "ADANIPORTS", "GUJGASLTD", "LICHSGFIN", "PIRAMALENT", "PEL", "MUTHOOTFIN", "PERSISTENT", "MPHASIS", "COFORGE",
-            "HEROMOTOCO", "EICHERMOT", "TVSMOTORS", "ASHOKLEY", "BALKRISIND", "PNB", "BANKBARODA", "CANBK", "UNIONBANK",
-            "IDFCFIRSTB", "INDIANB", "CENTRALBK", "IOB", "INDUSINDBK", "FEDERALBNK", "BANDHANBNK", "LTTS", "LTIM", "TECHM"
-        ]
+        # --- Dynamic NIFTY 500 symbol list ---
+        data_manager = DataManager()
+        try:
+            nifty_500_symbols = data_manager.get_nifty_500_symbols()
+            if not nifty_500_symbols or not isinstance(nifty_500_symbols, list):
+                raise Exception("NIFTY 500 fetch failed or returned invalid data.")
+        except Exception as e:
+            st.warning(f"Could not fetch NIFTY 500 symbols dynamically. Using fallback list. Error: {e}")
+            nifty_500_symbols = [
+                "RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR", "ICICIBANK", "KOTAKBANK", "LT", "SBIN", "BHARTIARTL",
+                "ITC", "ASIANPAINT", "AXISBANK", "MARUTI", "NESTLEIND", "BAJFINANCE", "HCLTECH", "WIPRO", "ULTRACEMCO", "ONGC",
+                "M&M", "TATASTEEL", "JSWSTEEL", "BPCL", "GRASIM", "HINDALCO", "POWERGRID", "NTPC", "COALINDIA", "DRREDDY",
+                "SUNPHARMA", "CIPLA", "DIVISLAB", "BIOCON", "LUPIN", "AUROPHARMA", "TORNTPHARM", "BRITANNIA", "MARICO",
+                "GODREJCP", "DABUR", "COLPAL", "TATACONSUM", "VEDL", "SAIL", "NMDC", "IOC", "GAIL", "DLF", "GODREJPROP",
+                "ADANIPORTS", "GUJGASLTD", "LICHSGFIN", "PIRAMALENT", "PEL", "MUTHOOTFIN", "PERSISTENT", "MPHASIS", "COFORGE",
+                "HEROMOTOCO", "EICHERMOT", "TVSMOTORS", "ASHOKLEY", "BALKRISIND", "PNB", "BANKBARODA", "CANBK", "UNIONBANK",
+                "IDFCFIRSTB", "INDIANB", "CENTRALBK", "IOB", "INDUSINDBK", "FEDERALBNK", "BANDHANBNK", "LTTS", "LTIM", "TECHM"
+            ]
         
-        symbol = st.selectbox("Stock Symbol", ["Choose a stock..."] + sorted(nse_stocks), index=0,
+        # Stock symbol input with auto-completion (dynamic)
+        symbol = st.selectbox("Stock Symbol", ["Choose a stock..."] + sorted(nifty_500_symbols), index=0,
                              help="Select NSE stock symbol or type to search")
         
         # Analysis Mode Selection
@@ -72,7 +80,7 @@ def main():
         # Index filtering and stock suggestions
         # Index selection for NSE stocks
         index_options = {
-                "All NSE Stocks": [],
+                "All NSE Stocks": nifty_500_symbols,
                 "NIFTY 50": ["RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR", "ICICIBANK", "KOTAKBANK", "LT", "SBIN", "BHARTIARTL", 
                            "ITC", "ASIANPAINT", "AXISBANK", "MARUTI", "NESTLEIND", "BAJFINANCE", "HCLTECH", "WIPRO", "ULTRACEMCO", "ONGC",
                            "M&M", "TATASTEEL", "JSWSTEEL", "BPCL", "GRASIM", "HINDALCO", "POWERGRID", "NTPC", "COALINDIA", "DRREDDY"],
@@ -101,7 +109,7 @@ def main():
             # Update symbol if a stock was selected
             if selected_stock != "Choose a stock...":
                 symbol = selected_stock
-                
+            
             st.caption(f"📈 {len(stock_list)} stocks available in {selected_index}")
         else:
             st.caption("💡 Popular stocks: RELIANCE, TCS, INFY, HDFCBANK, ICICIBANK, KOTAKBANK, LT, WIPRO, MARUTI, ASIANPAINT")
@@ -235,7 +243,7 @@ def main():
         
         if analyze_individual:
             individual_stock = st.selectbox("Select Stock for Breakout Analysis", 
-                                          ["Choose a stock..."] + sorted(nse_stocks), 
+                                          ["Choose a stock..."] + sorted(nifty_500_symbols), 
                                           index=0, key="individual_breakout_stock")
             if st.button("🔍 Check Breakout", type="primary") and individual_stock != "Choose a stock...":
                 with st.spinner(f"Analyzing {individual_stock}..."):
@@ -280,6 +288,7 @@ def main():
         else:
             # Get index options for scanning
             index_options = {
+                "NIFTY 500": nifty_500_symbols,
                 "NIFTY 50": ["RELIANCE", "TCS", "HDFCBANK", "INFY", "HINDUNILVR", "ICICIBANK", "KOTAKBANK", "LT", "SBIN", "BHARTIARTL", 
                            "ITC", "ASIANPAINT", "AXISBANK", "MARUTI", "NESTLEIND", "BAJFINANCE", "HCLTECH", "WIPRO", "ULTRACEMCO", "ONGC",
                            "M&M", "TATASTEEL", "JSWSTEEL", "BPCL", "GRASIM", "HINDALCO", "POWERGRID", "NTPC", "COALINDIA", "DRREDDY"],
